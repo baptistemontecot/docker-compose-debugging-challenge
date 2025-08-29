@@ -1,40 +1,73 @@
-# 🐳 Docker Compose Debugging Challenge
->*Diagnostiquer et réparer des stacks avec Docker Compose qui ne fonctionnent pas*
+# 💬 EXERCICE 3 : Mattermost + PostgreSQL
 
-## 📋 Exercices disponibles
-| Branche                    | Exercice       | Stack                          | Statut      |
-|----------------------------|----------------|--------------------------------|-------------|
-| `fix/wordpress-mysql`      | Exercice 1     | WordPress + MySQL + phpMyAdmin | ✅ Corrigé   |
-| `fix/nextcloud-postgresql` | Exercice 2     | Nextcloud + PostgreSQL + Redis | ✅ Corrigé   |
-| `fix/mattermost-postgres`  | Exercice 3     | Mattermost + PostgreSQL        | 🚧 En cours |
-| `main`                     | Base du projet | Documentation et instructions  | 📚          |
+## Problèmes identifiés
 
-### 🚀 Navigation entre les branches
-*Changer de branche*
-```bash
-  # Aller sur l'exercice WordPress + MySQL
-  git checkout fix/wordpress-mysql
+- Erreur SSL : `"pq: SSL is not enabled on the server"`
+- Erreur d’authentification : `"password authentication failed for user 'mattermost'"`
+- Connexion refusée : `"dial tcp: connect: connection refused"`
 
-  # Aller sur l'exercice Nextcloud + PostgreSQL
-  git checkout fix/nextcloud-postgresql
-  
-  # Aller sur l'exercice Mattermost + PostgreSQL
-  git checkout fix/mattermost-postgres
+## Corrections apportées
 
-  # Retourner à la branche principale
-  git checkout main
+1. Configuration SSL désactivée
+
+Ajout du paramètre `?sslmode=disable` dans la chaîne de connexion :
+
+```yaml
+environment:
+  - MM_SQLSETTINGS_DATASOURCE=postgres://mattermost:password@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
 ```
 
-*Voir toutes les branches*
+2. Cohérence des variables d’environnement
+
+Alignement parfait entre les services Mattermost et PostgreSQL :
+
+- Utilisateur : `POSTGRES_USER`
+- Mot de passe : `'POSTGRES_PASSWORD`
+- Base de données : `POSTGRES_BD`
+
+3. Architecture réseau sécurisée
+
+- Réseau `database` dédié pour PostgreSQL
+- Isolation des services sensibles
+- Pas d’exposition du port PostgreSQL vers l’extérieur
+
+## Tests et vérification
+
+1. Déploiement
+
 ```bash
-  git branch -a
+  # Supprimer les volumes existants (si nécessaire)
+  docker-compose down -v
+
+  # Démarrer la stack
+  docker-compose up -d
 ```
 
-## 📖 Documentation
-Chaque branche contient son propre `README.md` détaillé avec :
-- 🔧 Problèmes identifiés
-- ✨ Solutions apportées
-- 🧪 Procédures de test
-- 📊 Architecture finale
+2. Vérification des logs
 
-Chaque exercice est une mise en situation réelle de debugging DevOps 🚀
+```bash
+  # Surveiller les logs Mattermost
+  docker logs -f mattermost
+
+  # Vérifier PostgreSQL
+  docker logs postgres
+```
+
+3. Test de connectivité
+
+```bash
+  # Accès à l'interface web
+  http://localhost:8065
+
+  # Test de la base de données
+  docker exec -it postgres psql -U mattermost -d mattermost -c "\l"
+```
+
+## Utilisation
+
+Première connexion
+
+1.	Accéder à http://localhost:8065
+2.	Cliquer sur “View in Browser”
+3.	Créer le compte administrateur
+4.	Configurer votre première équipe

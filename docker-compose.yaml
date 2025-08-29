@@ -1,0 +1,60 @@
+services:
+  mattermost:
+    image: mattermost/mattermost-team-edition:latest
+    container_name: mattermost
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: ${MM_SQLSETTINGS_DRIVERNAME}
+      MM_SQLSETTINGS_DATASOURCE: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_HOST}/${POSTGRES_DB}?sslmode=disable&connect_timeout=10
+      MM_BLEVESETTINGS_INDEXDIR: ${MM_BLEVESETTINGS_INDEXDIR}
+      MM_SERVICESETTINGS_SITEURL: http://localhost:${MM_HOST}
+    volumes:
+      - mattermost_data:/mattermost/data
+      - mattermost_logs:/mattermost/logs
+      - mattermost_plugins:/mattermost/plugins
+    depends_on:
+      - postgres
+    networks:
+      - default
+      - database
+    ports:
+      - "${MM_HOST}:8065"
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+    networks:
+      - database
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mattermost_data:
+  mattermost_logs:
+  mattermost_plugins:
+  postgres_data:
+
+networks:
+  default:
+    driver: bridge
+  web:
+    name: web
+    driver: bridge
+  database:
+    name: database
+    driver: bridge
